@@ -126,3 +126,4 @@ dmypy.json
 
 # test data file
 *.cmbl
+pl.py
