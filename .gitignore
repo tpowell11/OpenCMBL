@@ -127,3 +127,5 @@ dmypy.json
 # test data file
 *.cmbl
 pl.py
+.vscode/spellright.dict
+t.py

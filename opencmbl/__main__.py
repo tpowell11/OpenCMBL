@@ -1,33 +1,34 @@
-# OpenCMBL by Tom Powell
-# 
+# OpenCMBL by Tom Powell (c) 2021
+# Main file
 import lxml.etree
 class Column(object):
     "Stores data & atrrributes from LoggerPro Columns"
     def __init__(self,data:list,unit=None):
-        self.data = data
-        self.unit = unit
+        self.data:list[float] = data
+        self.unit:str = unit
 class DataSet(object):
     def __init__(self, name:str, id:int):
-        self.name = name
-        self._ID = id #used to map lines of best fit to datasets
-        # ! the number of titles MUST be the same as the
-        # ! number of Columns or else things will break
-        self.ColumnTitles = []
-        self.columns=[] #list[Column]
+        self.name:str = name
+        self._ID:int = id
+        #! the number of titles MUST be the same as the
+        #! number of Columns or else things will break
+        self.ColumnTitles:list[str] = []
+        self.columns:list[Column]=[]
     def addColumn(self, data:list, unit:str):
         self.columns.append(Column(data,unit))
 class cmbl(object):
     def __init__(self, filename:str):
         self.root = lxml.etree.parse(filename)
-
-        self.data = []
+        self.data:list[DataSet] = []
         #fields directly from the file
-        self.version = float(self.root.find('Version').text)
-        self.encoding = str(self.root.find('charset').text)
-        self.filename = str(self.root.find('FileName').text)
-        self.radians = bool(self.root.find('Radians').text)
-        self.creationDate = str(self.root.find("CreationDateTime").text)
-        self.modifiedDate = str(self.root.find("ModifiedDateTime").text)
+        #* these elements only appear once in the file
+        #* therefore, the 'find any in tree' specifier can be used
+        self.version = float(self.root.find('.//Version').text)
+        self.charset = str(self.root.find('.//charset').text)
+        self.filename = str(self.root.find('.//FileName').text)
+        self.radians = bool(self.root.find('.//Radians').text)
+        self.creationDate = str(self.root.find(".//CreationDateTime").text)
+        self.modifiedDate = str(self.root.find(".//ModifiedDateTime").text)
         #graph options
         self.graphTitle = str(self.root.find(".//GraphTitle").text)
         self.gXLabel = str(self.root.find(".//GraphPlotXLabel").text)
@@ -43,22 +44,21 @@ class cmbl(object):
         self.gymax = float(self.root.find(".//GraphPlotYMax").text)
 
         #dataset extraction
+        #* _name & _id are internal state, dont use externally
         self._name = ""
         self._id = 0
         for instance in self.root.iterfind('.//DataSet'):
             for element in instance.iter("*"):
-                #filter out the DataSet of best fit lines
-                if element.tag == "DataSetName" and "&&^%" not in element.text:
-                    print(element.find("./ID"))
+                if element.tag == "DataSetName" and "&&^%" not in element.text: 
+                    #* Loggerpro uses the DataSetName property to differentiate between
+                    #* actual data and user-added lines of best fit. This is a filter for that.
                     self._name = element.text
-                    #self.data.append(DataSet(element.text, element.find("ID")))
                 if element.tag == "ID" and element.getparent().tag == "DataSet":
-                    print(element.text)
                     self.data.append(DataSet(self._name, element.text))
                 if element.tag == "DataColumn":
                     _temp = element.find(".//ColumnCells").text.split("\n")
-                    del _temp[0] #remove two newlines at beginning and end of data
-                    del _temp[-1]
+                    del _temp[0] #* due to the way the xml file is written, two newlines need to be removed from the data
+                    del _temp[-1] #* these are located at the beginning and end of the splitted text
+                    _temp = [float(val) for val in _temp] # swap strs for floats
                     self.data[-1].addColumn(_temp,element.find("./ColumnUnits").text)
 file = cmbl("test.cmbl")
-print(": %s | %s"%(file.data[1]._ID,file.data[1].name))
