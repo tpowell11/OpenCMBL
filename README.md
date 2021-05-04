@@ -44,5 +44,7 @@ axs.set_ylabel("Concentration (%s)" % yunit)
 axs.set_title(title)
 plt.show()
 ```
-yields:
+yields:<br>
 <img src="Figure_1.svg"></img>
+***
+Licensed under the [MIT License](https://opensource.org/licenses/MIT) &#169; 2021 Tom Powell
